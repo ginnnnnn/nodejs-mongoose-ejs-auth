@@ -13,27 +13,21 @@ exports.postAddProduct = (req, res, next) => {
   const price = req.body.price;
   const imageUrl = req.body.imageUrl;
   const description = req.body.description;
-  // get req info and set as params
-  req.user
-    .createProduct({
-      title: title,
-      imageUrl: imageUrl,
-      price: price,
-      description: description
-    })
-    .then(() => {
+  const product = new Product(
+    title,
+    imageUrl,
+    description,
+    price,
+    null,
+    req.user._id
+  );
+  product
+    .save()
+    .then(result => {
       console.log("Create Product");
-      res.redirect("/product-list");
+      res.redirect("/admin/products");
     })
     .catch(err => console.log(err));
-  // Product.create({
-  //   //sequelize method create() it create table and save
-  //   title: title,
-  //   imageUrl: imageUrl,
-  //   price: price,
-  //   description: description,
-  //   userId: req.user.id
-  // })
 };
 
 exports.getEditProduct = (req, res, next) => {
@@ -43,11 +37,8 @@ exports.getEditProduct = (req, res, next) => {
   }
   const prdId = req.params.productId;
   // check route "/edit-product/:productId"
-  req.user
-    .getProducts({ where: { id: prdId } })
-    .then(products => {
-      // products [{}]
-      const product = products[0];
+  Product.findById(prdId)
+    .then(product => {
       if (!product) {
         return res.redirect("/");
       }
@@ -62,21 +53,21 @@ exports.getEditProduct = (req, res, next) => {
 };
 
 exports.postEditProduct = (req, res, next) => {
-  const prdId = req.params.productId;
+  const id = req.params.productId;
   const title = req.body.title;
   const price = req.body.price;
   const imageUrl = req.body.imageUrl;
   const description = req.body.description;
-  // get req info and set as params
-  Product.findByPk(prdId)
-    .then(product => {
-      product.title = title;
-      product.price = price;
-      product.imageUrl = imageUrl;
-      product.description = description;
-      product.userId = req.user.id; // req.user has been replaced by sequelize user
-      return product.save(); //sequelize method save it in database,if non exist create one
-    })
+  const product = new Product(
+    title,
+    imageUrl,
+    description,
+    price,
+    id,
+    req.user._id
+  );
+  product
+    .save()
     .then(() => {
       res.redirect("/admin/products");
     })
@@ -85,24 +76,16 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDelProduct = (req, res, next) => {
   const prdId = req.body.productId;
-  // Product.destroy({ where: { id: prdId } })
-  //   .then(() => {
-  //     res.redirect("/admin/products");
-  //   })
-  //   .catch(err => console.log(err));
-  Product.findByPk(prdId) //other way to delete
-    .then(product => {
-      return product.destroy();
-    })
+  Product.deletebyId(prdId)
     .then(() => {
+      console.log("delete");
       res.redirect("/admin/products");
     })
     .catch(err => console.log(err));
 };
 
 exports.getProducts = (req, res, next) => {
-  req.user
-    .getProducts()
+  Product.fetchAll()
     .then(products => {
       res.render("admin/products", {
         prods: products,

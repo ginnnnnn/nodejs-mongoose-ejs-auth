@@ -1,19 +1,28 @@
-const Sequelize = require("sequelize");
+const mongodb = require("mongodb"); // npm install --save mongodb
+const MongoClient = mongodb.MongoClient; //set up client
 
-const sequelize = new Sequelize("node-complete", "root", "zhaojing123", {
-  dialect: "mysql",
-  host: "localhost"
-});
+let _db;
 
-module.exports = sequelize;
+const mongoConnect = callback => {
+  MongoClient.connect("yourMongoDbUrl", { useNewUrlParser: true }) // ...mongodb.net/<database name>? ...
+    .then(client => {
+      console.log("connected");
+      _db = client.db(); //set database to client
+      callback();
+    })
+    .catch(err => {
+      console.log(err);
+      throw err;
+    });
+};
 
-// const mysql = require("mysql2");
+const getDb = () => {
+  if (_db) {
+    return _db;
+  } else {
+    throw "no database found!";
+  }
+};
 
-// const pool = mysql.createPool({
-//   host: "localhost",
-//   user: "root",
-//   database: "node-complete",
-//   password: "password"
-// });
-
-// module.exports = pool.promise(); //fetch db is async action
+exports.mongoConnect = mongoConnect;
+exports.getDb = getDb;
