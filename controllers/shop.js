@@ -1,13 +1,13 @@
 const Product = require("../models/product");
-const User = require("../models/user");
+const Order = require("../models/order");
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  Product.find()
     .then(products => {
       res.render("shop/product-list", {
         prods: products,
         pageTitle: "Shop",
-        path: "/product-list"
+        path: "/products"
       });
     })
     .catch(err => console.log(err));
@@ -15,8 +15,7 @@ exports.getProducts = (req, res, next) => {
 
 exports.getProduct = (req, res, next) => {
   const prdId = req.params.productId;
-  console.log(prdId);
-  Product.findById(prdId)
+  Product.findById(prdId) // mongoose method
     .then(product => {
       res.render("shop/product-details", {
         product: product,
@@ -28,7 +27,7 @@ exports.getProduct = (req, res, next) => {
 };
 
 exports.getIndex = (req, res, next) => {
-  Product.fetchAll()
+  Product.find()
     .then(products => {
       res.render("shop/index", {
         prods: products,
@@ -41,12 +40,19 @@ exports.getIndex = (req, res, next) => {
 
 exports.getCart = (req, res, next) => {
   req.user
-    .getCart()
-    .then(products => {
+    .populate("cart.items.productId") // create relate path to cart item
+    .execPopulate() //  fetch the path
+    .then(user => {
+      user.cart.items.forEach(element => {
+        if (!element.productId) {
+          user.cart.items = [];
+          return user.save();
+        }
+      });
       res.render("shop/cart", {
         path: "/cart",
         pageTitle: "Your Cart",
-        products: products
+        products: user.cart.items
       });
     })
     .catch(err => console.log(err));
@@ -56,7 +62,7 @@ exports.postCart = (req, res, next) => {
   const prdId = req.body.productId;
   Product.findById(prdId)
     .then(product => {
-      return req.user.addtoCart(product);
+      return req.user.addToCart(product);
     })
     .then(result => {
       res.redirect("/cart");
@@ -67,7 +73,7 @@ exports.postCart = (req, res, next) => {
 exports.postCartdelProduct = (req, res, next) => {
   const prdId = req.body.productId;
   req.user
-    .deleteCartItemById(prdId)
+    .removeCartItem(prdId)
     .then(result => {
       res.redirect("/cart");
     })
@@ -76,17 +82,39 @@ exports.postCartdelProduct = (req, res, next) => {
 
 exports.postOrder = (req, res, next) => {
   req.user
-    .addOrder()
-    .then(result => {
+    .populate("cart.items.productId")
+    .execPopulate()
+    .then(user => {
+      //this array
+      const products = user.cart.items.map(i => {
+        return {
+          quantity: i.quantity,
+          product: { ...i.productId._doc } // mongoose method  ._doc extract datas
+        };
+      });
+      console.log(products);
+      const order = new Order({
+        user: {
+          name: req.user.name,
+          userId: req.user // or req.user._id
+        },
+        products: products
+      });
+      return order.save();
+    })
+    .then(() => {
+      return req.user.clearCart();
+    })
+    .then(() => {
       res.redirect("/orders");
     })
-    .catch(err => console.log(err));
+    .catch(err => console.log()); // cus ref Product so this path will get info of product of cart
 };
 
 exports.getOrders = (req, res, next) => {
-  req.user
-    .getOrders()
+  Order.find({ "user.userId": req.user.id }) //mongoose find()method "nest props"
     .then(orders => {
+      console.log(orders);
       res.render("shop/orders", {
         path: "/orders",
         pageTitle: "Your orders",

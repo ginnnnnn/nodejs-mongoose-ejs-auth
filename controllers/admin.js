@@ -13,16 +13,16 @@ exports.postAddProduct = (req, res, next) => {
   const price = req.body.price;
   const imageUrl = req.body.imageUrl;
   const description = req.body.description;
-  const product = new Product(
-    title,
-    imageUrl,
-    description,
-    price,
-    null,
-    req.user._id
-  );
+  const product = new Product({
+    title: title,
+    price: price,
+    imageUrl: imageUrl,
+    description: description,
+    userId: req.user // req.user._id , req.user also fine cus mongoose!
+  }); // mongoose schema-> order does not matter here
+
   product
-    .save()
+    .save() // mongoose method save()
     .then(result => {
       console.log("Create Product");
       res.redirect("/admin/products");
@@ -37,7 +37,7 @@ exports.getEditProduct = (req, res, next) => {
   }
   const prdId = req.params.productId;
   // check route "/edit-product/:productId"
-  Product.findById(prdId)
+  Product.findById(prdId) // mongoose method
     .then(product => {
       if (!product) {
         return res.redirect("/");
@@ -58,16 +58,14 @@ exports.postEditProduct = (req, res, next) => {
   const price = req.body.price;
   const imageUrl = req.body.imageUrl;
   const description = req.body.description;
-  const product = new Product(
-    title,
-    imageUrl,
-    description,
-    price,
-    id,
-    req.user._id
-  );
-  product
-    .save()
+  Product.findById(id)
+    .then(product => {
+      product.title = title;
+      product.price = price;
+      product.imageUrl = imageUrl;
+      product.description = description;
+      return product.save();
+    })
     .then(() => {
       res.redirect("/admin/products");
     })
@@ -76,7 +74,8 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDelProduct = (req, res, next) => {
   const prdId = req.body.productId;
-  Product.deletebyId(prdId)
+  // Product.deleteOne({ _id: prdId })
+  Product.findByIdAndRemove(prdId) //mongoose method
     .then(() => {
       console.log("delete");
       res.redirect("/admin/products");
@@ -85,7 +84,9 @@ exports.postDelProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  Product.find()
+    // .select("title -price") // "title" only show title "-price" dont show price
+    // .populate("userId") //extra the path for userId
     .then(products => {
       res.render("admin/products", {
         prods: products,
