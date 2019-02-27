@@ -35,7 +35,7 @@ app.use(errorController.get404);
 
 mongoose
   .connect(
-    "mongodb+srv://ginnnnnn66666:HCb0qDZzL6TeOOJA@cluster0-d7kb8.mongodb.net/shop?retryWrites=true",
+    "mongodb+srv://<mongoDb-ID>:<mongoDb-password>@cluster0-d7kb8.mongodb.net/shop?retryWrites=true",
     { useNewUrlParser: true }
   )
   .then(() => {
