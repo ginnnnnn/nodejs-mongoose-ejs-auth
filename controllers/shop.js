@@ -2,12 +2,14 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 
 exports.getProducts = (req, res, next) => {
+  const isAuthed = req.session.isLoggedIn;
   Product.find()
     .then(products => {
       res.render("shop/product-list", {
         prods: products,
         pageTitle: "Shop",
-        path: "/products"
+        path: "/products",
+        isAuthenticated: isAuthed
       });
     })
     .catch(err => console.log(err));
@@ -62,6 +64,7 @@ exports.postCart = (req, res, next) => {
   const prdId = req.body.productId;
   Product.findById(prdId)
     .then(product => {
+      console.log(req.user);
       return req.user.addToCart(product);
     })
     .then(result => {
@@ -95,7 +98,7 @@ exports.postOrder = (req, res, next) => {
       console.log(products);
       const order = new Order({
         user: {
-          name: req.user.name,
+          email: req.user.email,
           userId: req.user // or req.user._id
         },
         products: products
@@ -112,9 +115,8 @@ exports.postOrder = (req, res, next) => {
 };
 
 exports.getOrders = (req, res, next) => {
-  Order.find({ "user.userId": req.user.id }) //mongoose find()method "nest props"
+  Order.find({ "user.userId": req.user }) //mongoose find()method "nest props"
     .then(orders => {
-      console.log(orders);
       res.render("shop/orders", {
         path: "/orders",
         pageTitle: "Your orders",

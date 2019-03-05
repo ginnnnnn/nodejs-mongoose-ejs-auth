@@ -52,6 +52,8 @@
 <%= editing ? product.description :'' %></textarea
           >
         </div>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
         <button class="btn" type="submit">
           <%= editing ? "Update Product": "Add Product" %>
           <!-- <% if (editing) { %> Update Product<% } else {%> Add Product <%} %> -->

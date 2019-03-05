@@ -1,5 +1,9 @@
+<% if(isAuthenticated) {%>
 <form action="/cart" method="POST">
   <button type="submit" class="btn">Add to Cart</button>
   <input type="hidden" name="productId" value="<%= prods._id %>" />
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
   <!-- POST value> id to /cart  ,in route props name is productId >name-->
 </form>
+<% }%>
